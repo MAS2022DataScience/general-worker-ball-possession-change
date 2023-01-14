@@ -1,4 +1,4 @@
-package com.mas2022datascience.tracabgen5spliter.admin;
+package com.mas2022datascience.generalworkerballpossessionchange.admin;
 
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.config.TopicConfig;
@@ -43,31 +43,4 @@ public class Topics {
         .config(TopicConfig.RETENTION_MS_CONFIG, "-1")
         .build();
   }
-
-  @Value(value = "${topic.general-02.name}")
-  private String topicNameTeam;
-  @Value(value = "${topic.general-02.partitions}")
-  private Integer topicPartitionsTeam;
-  @Value(value = "${topic.general-02.replication-factor}")
-  private Integer topicReplicationFactorTeam;
-
-  // creates or alters the topic
-  @Bean
-  public NewTopic general02() {
-    return TopicBuilder.name(topicNameTeam)
-        .partitions(topicPartitionsTeam)
-        .replicas(topicReplicationFactorTeam)
-        .config(TopicConfig.RETENTION_MS_CONFIG, "-1")
-        .build();
-  }
-
-//  @Bean
-//  public NewTopic temp() {
-//    return TopicBuilder.name("temp")
-//        .partitions(3)
-//        .replicas(2)
-//        .config(TopicConfig.RETENTION_MS_CONFIG, "-1")
-//        .build();
-//  }
-
 }

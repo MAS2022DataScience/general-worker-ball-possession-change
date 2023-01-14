@@ -4,17 +4,17 @@ topic:
     replication-factor: 2
     partitions: 3
   general-01:
-    name: general_01_player_ball
+    name: general_04_ball_possession_change
     replication-factor: 2
     partitions: 3
-  general-02:
-    name: general_02_team
+  general-match-team:
+    name: general_match_team
     replication-factor: 2
     partitions: 3
 
 spring:
   application:
-    name: "tracabgen5-spliter"
+    name: "general-worker-ball-possession-change"
 
   kafka:
     bootstrap.servers:
