@@ -1,13 +1,15 @@
 package com.mas2022datascience.generalworkerballpossessionchange.processor;
 
+import static com.mas2022datascience.util.Time.utcString2epocMs;
+
 import com.mas2022datascience.avro.v1.GeneralBallPossessionChange;
+import com.mas2022datascience.avro.v1.GeneralMatchPhase;
 import com.mas2022datascience.avro.v1.GeneralMatchTeam;
 import com.mas2022datascience.avro.v1.Object;
 import com.mas2022datascience.avro.v1.TracabGen5TF01;
+import com.mas2022datascience.util.Zones;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -20,13 +22,10 @@ import org.apache.kafka.streams.kstream.Grouped;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
-import org.apache.kafka.streams.kstream.Printed;
 import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.kstream.Transformer;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.state.KeyValueStore;
-import org.apache.kafka.streams.state.QueryableStoreTypes;
-import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,7 +41,7 @@ public class KafkaStreamsRunnerDSL {
   @Value(value = "${topic.tracab-01.name}") private String topicIn;
   @Value(value = "${topic.general-01.name}") private String topicOutBallPossessionChange;
   @Value(value = "${topic.general-match-team.name}") private String topicGeneralMatchTeam;
-
+  @Value(value = "${topic.general-match-phase.name}") private String topicGeneralMatchPhase;
   @Bean
   public KStream<String, TracabGen5TF01> kStream(StreamsBuilder kStreamBuilder) {
 
@@ -66,6 +65,17 @@ public class KafkaStreamsRunnerDSL {
         .groupByKey(Grouped.with(Serdes.String(), generalMatchTeamSerde))
         .reduce((oldEvent, newEvent) -> newEvent,
             Materialized.as("general-match-team-store"));
+
+    final Serde<GeneralMatchPhase> generalMatchPhaseSerde = new SpecificAvroSerde<>();
+    generalMatchPhaseSerde.configure(serdeConfig, false); // `false` for record values
+
+    KStream<String, GeneralMatchPhase> streamPhase = kStreamBuilder.stream(topicGeneralMatchPhase,
+        Consumed.with(Serdes.String(), generalMatchPhaseSerde));
+
+    KTable<String, GeneralMatchPhase> phase = streamPhase
+        .groupByKey(Grouped.with(Serdes.String(), generalMatchPhaseSerde))
+        .reduce((oldEvent, newEvent) -> newEvent,
+            Materialized.as("general-match-phase-store"));
 
     KStream<String, TracabGen5TF01> stream = kStreamBuilder.stream(topicIn,
         Consumed.with(Serdes.String(), tracabGen5TF01Serde));
@@ -102,6 +112,19 @@ public class KafkaStreamsRunnerDSL {
           } else {
             newValue.setWonPossessionTeamId(String.valueOf(teamsValue.getAwayTeamID()));
             newValue.setLostPossessionTeamId(String.valueOf(teamsValue.getHomeTeamID()));
+          }
+          return newValue;
+        })
+        .leftJoin(phase, (newValue, phaseValue) -> {
+          if (Zones.getZone(newValue.getBallX(), newValue.getBallY(),
+              newValue.getTs(), newValue.getWonPossessionTeamId(), phaseValue) != -1) {
+            newValue.setWonPossessionTeamZone(Zones.getZone(newValue.getBallX(), newValue.getBallY(),
+                newValue.getTs(), newValue.getWonPossessionTeamId(), phaseValue));
+          }
+          if (Zones.getZone(newValue.getBallX(), newValue.getBallY(),
+              newValue.getTs(), newValue.getLostPossessionTeamId(), phaseValue) != -1) {
+            newValue.setLostPossessionTeamZone(Zones.getZone(newValue.getBallX(), newValue.getBallY(),
+                newValue.getTs(), newValue.getLostPossessionTeamId(), phaseValue));
           }
           return newValue;
         })
@@ -164,18 +187,6 @@ public class KafkaStreamsRunnerDSL {
   }
 
   /**
-   * Converts the utc string of type "yyyy-MM-dd'T'HH:mm:ss.SSS" to epoc time in milliseconds.
-   * @param utcString of type String of format "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
-   * @return epoc time in milliseconds
-   */
-  private static long utcString2epocMs(String utcString) {
-    DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-        .withZone(ZoneOffset.UTC);
-
-    return Instant.from(fmt.parse(utcString)).toEpochMilli();
-  }
-
-  /**
    * Gets the ball object from the list of objects.
    * @param objects list of objects
    * @return the ball object
@@ -188,6 +199,7 @@ public class KafkaStreamsRunnerDSL {
     }
     return null;
   }
+
 }
 
 
