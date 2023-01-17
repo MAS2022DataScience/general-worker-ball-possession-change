@@ -18,7 +18,6 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;
-import org.apache.kafka.streams.kstream.Grouped;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
@@ -55,27 +54,19 @@ public class KafkaStreamsRunnerDSL {
         SpecificAvroSerde<>();
     generalBallPossessionChangeSerde.configure(serdeConfig, false);//`false` for record values
 
+    // match team
     final Serde<GeneralMatchTeam> generalMatchTeamSerde = new SpecificAvroSerde<>();
     generalMatchTeamSerde.configure(serdeConfig, false); // `false` for record values
-
     KStream<String, GeneralMatchTeam> streamTeam = kStreamBuilder.stream(topicGeneralMatchTeam,
         Consumed.with(Serdes.String(), generalMatchTeamSerde));
+    KTable<String, GeneralMatchTeam> teams = streamTeam.toTable(Materialized.as("teamsStore"));
 
-    KTable<String, GeneralMatchTeam> teams = streamTeam
-        .groupByKey(Grouped.with(Serdes.String(), generalMatchTeamSerde))
-        .reduce((oldEvent, newEvent) -> newEvent,
-            Materialized.as("general-match-team-store"));
-
+    // match phase
     final Serde<GeneralMatchPhase> generalMatchPhaseSerde = new SpecificAvroSerde<>();
     generalMatchPhaseSerde.configure(serdeConfig, false); // `false` for record values
-
     KStream<String, GeneralMatchPhase> streamPhase = kStreamBuilder.stream(topicGeneralMatchPhase,
         Consumed.with(Serdes.String(), generalMatchPhaseSerde));
-
-    KTable<String, GeneralMatchPhase> phase = streamPhase
-        .groupByKey(Grouped.with(Serdes.String(), generalMatchPhaseSerde))
-        .reduce((oldEvent, newEvent) -> newEvent,
-            Materialized.as("general-match-phase-store"));
+    KTable<String, GeneralMatchPhase> phases = streamPhase.toTable(Materialized.as("phasesStore"));
 
     KStream<String, TracabGen5TF01> stream = kStreamBuilder.stream(topicIn,
         Consumed.with(Serdes.String(), tracabGen5TF01Serde));
@@ -94,16 +85,15 @@ public class KafkaStreamsRunnerDSL {
 
     transformedStream
         .filter((key, values) -> values != null)
-        .map((key, value) -> {
-          return new KeyValue<String, GeneralBallPossessionChange>(key,
-              GeneralBallPossessionChange.newBuilder()
+        .mapValues((value) -> {
+          return GeneralBallPossessionChange.newBuilder()
                   .setTs(Instant.ofEpochMilli(utcString2epocMs(value.getUtc())))
-                  .setMatchId(key)
+                  .setMatchId(value.getMatchId())
                   .setLostPossessionTeamId(value.getBallPossession().equals("A") ? "HOME" : "AWAY")
                   .setWonPossessionTeamId(value.getBallPossession().equals("H") ? "HOME" : "AWAY")
                   .setBallX(getBallObject(value.getObjects()).getX())
                   .setBallY(getBallObject(value.getObjects()).getY())
-                  .build());
+                  .build();
         })
         .leftJoin(teams, (newValue, teamsValue) -> {
           if (newValue.getWonPossessionTeamId().equals("HOME")) {
@@ -115,7 +105,7 @@ public class KafkaStreamsRunnerDSL {
           }
           return newValue;
         })
-        .leftJoin(phase, (newValue, phaseValue) -> {
+        .leftJoin(phases, (newValue, phaseValue) -> {
           if (Zones.getZone(newValue.getBallX(), newValue.getBallY(),
               newValue.getTs(), newValue.getWonPossessionTeamId(), phaseValue) != -1) {
             newValue.setWonPossessionTeamZone(Zones.getZone(newValue.getBallX(), newValue.getBallY(),
