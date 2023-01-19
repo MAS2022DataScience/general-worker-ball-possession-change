@@ -1,7 +1,6 @@
 package com.mas2022datascience.generalworkerballpossessionchange.processor;
 
-import static com.mas2022datascience.util.Time.utcString2epocMs;
-
+import com.mas2022datascience.util.Time;
 import com.mas2022datascience.avro.v1.GeneralBallPossessionChange;
 import com.mas2022datascience.avro.v1.GeneralMatchPhase;
 import com.mas2022datascience.avro.v1.GeneralMatchTeam;
@@ -87,7 +86,7 @@ public class KafkaStreamsRunnerDSL {
         .filter((key, values) -> values != null)
         .mapValues((value) -> {
           return GeneralBallPossessionChange.newBuilder()
-                  .setTs(Instant.ofEpochMilli(utcString2epocMs(value.getUtc())))
+                  .setTs(Instant.ofEpochMilli(Time.utcString2epocMs(value.getUtc())))
                   .setMatchId(value.getMatchId())
                   .setLostPossessionTeamId(value.getBallPossession().equals("A") ? "HOME" : "AWAY")
                   .setWonPossessionTeamId(value.getBallPossession().equals("H") ? "HOME" : "AWAY")
