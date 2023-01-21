@@ -36,8 +36,8 @@ import org.springframework.kafka.annotation.EnableKafkaStreams;
 public class KafkaStreamsRunnerDSL {
 
   @Value(value = "${spring.kafka.properties.schema.registry.url}") private String schemaRegistry;
-  @Value(value = "${topic.tracab-01.name}") private String topicIn;
-  @Value(value = "${topic.general-01.name}") private String topicOutBallPossessionChange;
+  @Value(value = "${topic.general-01.name}") private String topicIn;
+  @Value(value = "${topic.general-02.name}") private String topicOutBallPossessionChange;
   @Value(value = "${topic.general-match-team.name}") private String topicGeneralMatchTeam;
   @Value(value = "${topic.general-match-phase.name}") private String topicGeneralMatchPhase;
   @Bean

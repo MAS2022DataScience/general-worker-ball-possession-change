@@ -1,9 +1,9 @@
 topic:
-  tracab-01:
-    name: tracabgen5_03_enriched
+  general-01:
+    name: general_01_player_ball_compact
     replication-factor: 2
     partitions: 3
-  general-01:
+  general-02:
     name: general_04_ball_possession_change
     replication-factor: 2
     partitions: 3

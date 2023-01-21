@@ -10,36 +10,36 @@ import org.springframework.stereotype.Component;
 @Component
 public class Topics {
 
-  @Value(value = "${topic.tracab-01.name}")
-  private String topicName1;
-  @Value(value = "${topic.tracab-01.partitions}")
-  private Integer topicPartitions1;
-  @Value(value = "${topic.tracab-01.replication-factor}")
-  private Integer topicReplicationFactor1;
-
-  // creates or alters the topic
-  @Bean
-  public NewTopic tracab01() {
-    return TopicBuilder.name(topicName1)
-        .partitions(topicPartitions1)
-        .replicas(topicReplicationFactor1)
-        .config(TopicConfig.RETENTION_MS_CONFIG, "-1")
-        .build();
-  }
-
   @Value(value = "${topic.general-01.name}")
-  private String topicNamePlayerBall;
+  private String topicNamePlayerBallCompact;
   @Value(value = "${topic.general-01.partitions}")
-  private Integer topicPartitionsPlayerBall;
+  private Integer topicPartitionsPlayerBallCompact;
   @Value(value = "${topic.general-01.replication-factor}")
-  private Integer topicReplicationFactorPlayerBall;
+  private Integer topicReplicationFactorPlayerBallCompact;
 
   // creates or alters the topic
   @Bean
   public NewTopic general01() {
-    return TopicBuilder.name(topicNamePlayerBall)
-        .partitions(topicPartitionsPlayerBall)
-        .replicas(topicReplicationFactorPlayerBall)
+    return TopicBuilder.name(topicNamePlayerBallCompact)
+        .partitions(topicPartitionsPlayerBallCompact)
+        .replicas(topicReplicationFactorPlayerBallCompact)
+        .config(TopicConfig.RETENTION_MS_CONFIG, "-1")
+        .build();
+  }
+
+  @Value(value = "${topic.general-02.name}")
+  private String topicNameBallPossessionChange;
+  @Value(value = "${topic.general-01.partitions}")
+  private Integer topicPartitionsBallPossessionChange;
+  @Value(value = "${topic.general-01.replication-factor}")
+  private Integer topicReplicationFactorBallPossessionChange;
+
+  // creates or alters the topic
+  @Bean
+  public NewTopic general02() {
+    return TopicBuilder.name(topicNameBallPossessionChange)
+        .partitions(topicPartitionsBallPossessionChange)
+        .replicas(topicReplicationFactorBallPossessionChange)
         .config(TopicConfig.RETENTION_MS_CONFIG, "-1")
         .build();
   }
