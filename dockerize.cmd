@@ -1,4 +1,6 @@
-docker build -t general-worker-ball-possession-change:0.0.1 -t general-worker-ball-possession-change:latest .
+REM docker build -t general-worker-ball-possession-change:0.0.1 -t general-worker-ball-possession-change:latest .
+docker rmi general-worker-ball-possession-change:latest -f
+docker build -t general-worker-ball-possession-change:latest .
 
 REM if it runs on localhost
 REM docker run -it -p 8080:8080 general-worker-ball-possession-change:latest
